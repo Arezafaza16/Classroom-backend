@@ -1,4 +1,6 @@
 import express from "express";
+import { eq } from 'drizzle-orm';
+import { db } from './db/index.js';
 
 const app = express();
 const PORT = 8080;
