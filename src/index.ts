@@ -1,11 +1,19 @@
 import express from "express";
-import { eq } from 'drizzle-orm';
-import { db } from './db/index.js';
+import subjectsRouter from "./routes/subjects";
+import cors from "cors";
 
 const app = express();
 const PORT = 8080;
 
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}))
+
 app.use(express.json());
+
+app.use('/api/subjects', subjectsRouter);
 
 app.get("/", (req, res) => {
     res.json({ message: "Classroom API is running" });
