@@ -7,10 +7,20 @@ const subjectsRouter = express.Router();
 
 subjectsRouter.get("/", async (req, res) => {
     try {
-        const { search, department, page = 1, limit = 10 } = req.query;
+        const { search, department, page = "1", limit = "10" } = req.query;
 
-        const currentPage = Math.max(1, +page);
-        const limitPerPage = Math.max(1, +limit);
+        
+        const pageParam = Array.isArray(page) ? page[0] : page;
+        const limitParam = Array.isArray(limit) ? limit[0] : limit;
+        const currentPage = Number(pageParam);
+        const limitPerPage = Number(limitParam);
+
+        if (
+            !Number.isInteger(currentPage) || currentPage < 1 ||
+            !Number.isInteger(limitPerPage) || limitPerPage < 1
+        ) {
+            return res.status(400).json({ message: "page and limit must be positive integers" });
+        }
 
         const offset = (currentPage -1) * limitPerPage;
 
@@ -26,12 +36,13 @@ subjectsRouter.get("/", async (req, res) => {
         }
 
         if (department) {
-            filterConditions.push(ilike(departments.name, `%${department}%`));
+            const deptPattern = `%${String(department).replace(/[%_]/g, '\\$&')}%`; //escaping
+            filterConditions.push(ilike(departments.name, deptPattern));
         }
 
         const whereClause = filterConditions.length > 0 ? and(...filterConditions) : undefined;
         const countResult = await db
-            .select({count : sql<number>`count(*)`})
+            .select({ count: sql<number>`count(*)`.mapWith(Number) })
             .from(subjects)
             .leftJoin(departments, eq(subjects.departmentId, departments.id))
             .where(whereClause);
